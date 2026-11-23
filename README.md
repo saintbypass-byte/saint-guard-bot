@@ -2,6 +2,10 @@
 
 A Python Telegram group manager with moderation, flood protection, welcome/goodbye messages, keyword filters, statistics, inline menus and admin logs.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/saintbypass-byte/saint-guard-bot)
+
+The button above deploys the included `render.yaml` Blueprint as a background worker with a persistent disk. Render will ask you to provide `BOT_TOKEN` and any optional environment variables before starting the bot.
+
 ## Requirements
 - Python 3.10+ (Python 3.12 recommended)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
@@ -53,11 +57,10 @@ docker compose logs -f
 The SQLite database is stored in `./data/`.
 
 ### Render
-1. Push this project to a private GitHub repository.
-2. In Render, create a new Blueprint and select the repository.
-3. Set `BOT_TOKEN` in the service's environment settings.
-4. Deploy as a background worker. Keep the persistent disk enabled so the SQLite database survives restarts.
-5. Check the worker logs for `SAINT GUARD is starting...`.
+1. Click the **Deploy to Render** button above, or create a new Blueprint from this repository.
+2. Set `BOT_TOKEN` in the service's environment settings; add `LOG_CHAT_ID` and `BOT_OWNER_ID` if needed.
+3. Keep the persistent disk enabled so the SQLite database survives restarts.
+4. Check the worker logs for `SAINT GUARD is starting...`.
 
 Other cloud providers can run the included Dockerfile as a long-running worker/container. Do not use a serverless function that stops between requests: this project uses long polling.
 
