@@ -5,6 +5,7 @@ import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from html import escape
+from pathlib import Path
 
 from dotenv import load_dotenv
 from telegram import (
@@ -21,6 +22,7 @@ from .db import Database
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN", "").strip()
+STARTUP_IMAGE = Path(__file__).resolve().parent.parent / "assets" / "startup.png"
 LOG_CHAT_ID = os.getenv("LOG_CHAT_ID", "").strip()
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID", "0") or 0)
 DB_PATH = os.getenv("DATABASE_PATH", "saint_guard.sqlite3")
@@ -119,7 +121,18 @@ START_TEXT = (
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     name = escape(user.first_name if user else "there")
-    await reply(update, START_TEXT.format(name=name), reply_markup=main_menu())
+    text = START_TEXT.format(name=name)
+    message = update.effective_message
+    if message and STARTUP_IMAGE.is_file():
+        with STARTUP_IMAGE.open("rb") as image:
+            await message.reply_photo(
+                photo=image,
+                caption=text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=main_menu(),
+            )
+    else:
+        await reply(update, text, reply_markup=main_menu())
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
