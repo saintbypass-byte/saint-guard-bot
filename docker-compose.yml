@@ -1,0 +1,10 @@
+services:
+  saint-guard:
+    build: .
+    container_name: saint-guard
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+    environment:
+      DATABASE_PATH: /data/saint_guard.sqlite3
