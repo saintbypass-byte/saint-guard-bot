@@ -1,10 +1,12 @@
 import logging
 import os
 import re
+import threading
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from html import escape
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -691,9 +693,38 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     log.exception("Unhandled bot error", exc_info=context.error)
 
 
+class HealthHandler(BaseHTTPRequestHandler):
+    """Small HTTP server used by Render to confirm the container is alive."""
+
+    def do_GET(self):  # noqa: N802 - required by BaseHTTPRequestHandler
+        if self.path not in ("/", "/health", "/health/"):
+            self.send_error(404)
+            return
+        body = b'{"status":"ok","service":"saint-guard-bot"}\n'
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, format, *args):
+        log.info("health %s", format % args)
+
+
+def start_health_server():
+    port = int(os.getenv("PORT", "10000"))
+    server = ThreadingHTTPServer(("0.0.0.0", port), HealthHandler)
+    thread = threading.Thread(target=server.serve_forever, name="health-server", daemon=True)
+    thread.start()
+    log.info("Health endpoint listening on 0.0.0.0:%s", port)
+    return server
+
+
 def main():
     if not TOKEN:
         raise SystemExit("BOT_TOKEN is missing. Copy .env.example to .env and add your token.")
+    health_server = start_health_server()
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
@@ -733,7 +764,10 @@ def main():
     app.add_handler(MessageHandler(filters.ChatType.GROUPS & ~filters.COMMAND, group_message))
     app.add_error_handler(error_handler)
     log.info("SAINT GUARD is starting...")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    try:
+        app.run_polling(allowed_updates=Update.ALL_TYPES)
+    finally:
+        health_server.shutdown()
 
 
 if __name__ == "__main__":

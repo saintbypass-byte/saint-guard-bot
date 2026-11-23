@@ -1,19 +1,16 @@
 services:
-  - type: worker
+  - type: web
     name: saint-guard-bot
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
-    autoDeploy: false
-    disk:
-      name: saint-guard-data
-      mountPath: /data
-      sizeGB: 1
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: BOT_TOKEN
         sync: false
       - key: DATABASE_PATH
-        value: /data/saint_guard.sqlite3
+        value: /tmp/saint_guard.sqlite3
       - key: LOG_CHAT_ID
         sync: false
       - key: BOT_OWNER_ID
